@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Change directory to the repository root
+cd "$(dirname "$0")"
+
 # Initialize a Go module
 go mod init internalNetworkScan
 
