@@ -1,6 +1,8 @@
 const Queue = require('bull');
 const axios = require('axios');
-const { performNucleiScan } = require('./helpers/scanUtils'); 
+const jwt = require('jsonwebtoken');
+const path = require('path');
+const { performNucleiScan } = require('./helpers/scanUtils');
 require('dotenv').config();
 
 const nucleiQueue = new Queue('nuclei', {
@@ -14,6 +16,7 @@ nucleiQueue.process(async (job) => {
     const { ips } = job.data;
 
     for (const ip of ips) {
+        console.log(`Running Nuclei scan for IP: ${ip}`);
         const scanResult = await runNucleiScan(ip);
         await sendScanResultToASM(scanResult);
     }
@@ -40,11 +43,20 @@ async function sendScanResultToASM(scanResult) {
     return response.data;
 }
 
-const CRON_INTERVAL = process.env.CRON_INTERVAL || '*/5 * * * *';
+const CRON_INTERVAL = process.env.CRON_INTERVAL || '*/30 * * * *';
 
 const cron = require('node-cron');
 
 cron.schedule(CRON_INTERVAL, async () => {
     console.log('Processing queue...');
+    const jobs = await nucleiQueue.getWaiting();
+    console.log(`Jobs in queue: ${jobs.length}`);
+    jobs.forEach((job, index) => {
+        console.log(`Job ${index + 1}:`, job.data);
+    });
     await nucleiQueue.process();
 });
+
+module.exports = {
+    nucleiQueue
+};
