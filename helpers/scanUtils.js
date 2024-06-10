@@ -11,18 +11,8 @@ const fs = require('fs');
  */
 const performNucleiScan = (ip, templatePath) => {
   return new Promise((resolve, reject) => {
-    let nucleiCmd = 'nuclei';
-    
-    // Check if the 'nuclei' command is available in the system PATH
-    exec('command -v nuclei', (error, stdout, stderr) => {
-      if (!error && stdout.trim()) {
-        nucleiCmd = 'nuclei';
-      } else {
-        // 'nuclei' command not found, execute the binary from the 'tools' directory
-        nucleiCmd = path.resolve(__dirname, '..', 'tools', 'nuclei');
-      }
+      let nucleiCmd = path.resolve(__dirname, '..', 'tools', 'nuclei');
 
-      // Execute the Nuclei scan command
       const cmd = `sudo ${nucleiCmd} -target ${ip} -t ${templatePath}`;
       exec(cmd, { cwd: path.resolve(__dirname, '..') }, (error, stdout, stderr) => {
         if (error) {
@@ -39,7 +29,6 @@ const performNucleiScan = (ip, templatePath) => {
         }
       });
     });
-  });
 };
 
 module.exports = {
