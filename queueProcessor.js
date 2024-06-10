@@ -60,7 +60,13 @@ cron.schedule(CRON_INTERVAL, async () => {
         console.log(`Job ${index + 1} [${job.id}]:`, job.data);
     });
 
-    await nucleiQueue.process();
+    for (const job of jobs) {
+        await nucleiQueue.getJob(job.id).then(job => {
+            if (job) {
+                job.promote(); 
+            }
+        });
+    }
 });
 
 module.exports = {
