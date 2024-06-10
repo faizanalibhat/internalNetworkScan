@@ -12,23 +12,6 @@ const nucleiQueue = new Queue('nuclei', {
     }
 });
 
-nucleiQueue.process(async (job) => {
-    const { ips } = job.data;
-
-    for (const ip of ips) {
-        console.log(`Running Nuclei scan for IP: ${ip}`);
-        try {
-            const scanResult = await runNucleiScan(ip);
-            await sendScanResultToASM(scanResult);
-        } catch (error) {
-            console.error(`Error processing IP ${ip}: ${error}`);
-            return Promise.reject(error);
-        }
-    }
-
-    return { message: 'Nuclei scans completed' };
-});
-
 async function runNucleiScan(ip) {
     const templatesPath = path.resolve(__dirname, 'tools', 'nuclei-templates');
     const scanResult = await performNucleiScan(ip, templatesPath);
@@ -48,17 +31,36 @@ async function sendScanResultToASM(scanResult) {
     return response.data;
 }
 
-const CRON_INTERVAL = process.env.CRON_INTERVAL || '*/30 * * * *';
+nucleiQueue.process(async (job, done) => {
+    const { ips } = job.data;
+
+    try {
+        for (const ip of ips) {
+            console.log(`Running Nuclei scan for IP: ${ip}`);
+            const scanResult = await runNucleiScan(ip);
+            await sendScanResultToASM(scanResult);
+        }
+        done();
+    } catch (error) {
+        console.error(`Error processing job ${job.id}:`, error);
+        done(error);
+    }
+});
+
+const CRON_INTERVAL = process.env.CRON_INTERVAL || '*/1 * * * *';
 
 const cron = require('node-cron');
 
 cron.schedule(CRON_INTERVAL, async () => {
     console.log('Processing queue...');
-    const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'completed', 'failed']);
+    const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
+
     console.log(`Jobs in queue: ${jobs.length}`);
     jobs.forEach((job, index) => {
         console.log(`Job ${index + 1} [${job.id}]:`, job.data);
     });
+
+    nucleiQueue.process();
 });
 
 module.exports = {
