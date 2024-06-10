@@ -14,6 +14,7 @@ const performNucleiScan = (ip, templatePath) => {
       let nucleiCmd = path.resolve(__dirname, '..', 'tools', 'nuclei');
 
       const cmd = `sudo ${nucleiCmd} -target ${ip} -t ${templatePath}`;
+      console.log("Command: ",cmd)
       exec(cmd, { cwd: path.resolve(__dirname, '..') }, (error, stdout, stderr) => {
         if (error) {
           console.error(`Error executing Nuclei scan: ${stderr}`);
