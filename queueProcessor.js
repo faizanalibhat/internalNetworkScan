@@ -40,10 +40,9 @@ async function processQueueJob(job) {
             const scanResult = await runNucleiScan(ip);
             await sendScanResultToASM(scanResult);
         }
-        await job.moveToCompleted('done', true);
+        await job.remove();
     } catch (error) {
         console.error(`Error processing job ${job.id}:`, error);
-        await job.moveToFailed({ message: error.message });
     }
 }
 
