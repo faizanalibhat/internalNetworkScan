@@ -1,6 +1,6 @@
 const Queue = require('bull');
 const axios = require('axios');
-const { performNucleiScan } = require('./scanUtils'); // Make sure this is the actual path
+const { performNucleiScan } = require('./helpers/scanUtils'); 
 require('dotenv').config();
 
 const nucleiQueue = new Queue('nuclei', {
