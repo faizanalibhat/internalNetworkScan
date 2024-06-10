@@ -31,7 +31,7 @@ async function sendScanResultToASM(scanResult) {
     return response.data;
 }
 
-nucleiQueue.process(async (job, done) => {
+async function processQueueJob(job) {
     const { ips } = job.data;
 
     try {
@@ -40,14 +40,14 @@ nucleiQueue.process(async (job, done) => {
             const scanResult = await runNucleiScan(ip);
             await sendScanResultToASM(scanResult);
         }
-        done();
+        await job.moveToCompleted('done', true);
     } catch (error) {
         console.error(`Error processing job ${job.id}:`, error);
-        done(error);
+        await job.moveToFailed({ message: error.message });
     }
-});
+}
 
-const CRON_INTERVAL = process.env.CRON_INTERVAL || '*/1 * * * *';
+const CRON_INTERVAL = process.env.CRON_INTERVAL || '*/30 * * * * *';
 
 const cron = require('node-cron');
 
@@ -56,16 +56,9 @@ cron.schedule(CRON_INTERVAL, async () => {
     const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
 
     console.log(`Jobs in queue: ${jobs.length}`);
-    jobs.forEach((job, index) => {
-        console.log(`Job ${index + 1} [${job.id}]:`, job.data);
-    });
-
     for (const job of jobs) {
-        await nucleiQueue.getJob(job.id).then(job => {
-            if (job) {
-                job.promote(); 
-            }
-        });
+        console.log(`Processing job [${job.id}]:`, job.data);
+        await processQueueJob(job);
     }
 });
 
