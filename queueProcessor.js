@@ -17,8 +17,13 @@ nucleiQueue.process(async (job) => {
 
     for (const ip of ips) {
         console.log(`Running Nuclei scan for IP: ${ip}`);
-        const scanResult = await runNucleiScan(ip);
-        await sendScanResultToASM(scanResult);
+        try {
+            const scanResult = await runNucleiScan(ip);
+            await sendScanResultToASM(scanResult);
+        } catch (error) {
+            console.error(`Error processing IP ${ip}: ${error}`);
+            return Promise.reject(error);
+        }
     }
 
     return { message: 'Nuclei scans completed' };
@@ -49,12 +54,11 @@ const cron = require('node-cron');
 
 cron.schedule(CRON_INTERVAL, async () => {
     console.log('Processing queue...');
-    const jobs = await nucleiQueue.getWaiting();
+    const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'completed', 'failed']);
     console.log(`Jobs in queue: ${jobs.length}`);
     jobs.forEach((job, index) => {
-        console.log(`Job ${index + 1}:`, job.data);
+        console.log(`Job ${index + 1} [${job.id}]:`, job.data);
     });
-    await nucleiQueue.process();
 });
 
 module.exports = {
