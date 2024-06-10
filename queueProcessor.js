@@ -13,22 +13,32 @@ const nucleiQueue = new Queue('nuclei', {
 });
 
 async function runNucleiScan(ip) {
-    const templatesPath = path.resolve(__dirname, 'tools', 'nuclei-templates');
-    const scanResult = await performNucleiScan(ip, templatesPath);
-    return scanResult;
+    try {
+        const templatesPath = path.resolve(__dirname, 'tools', 'nuclei-templates');
+        const scanResult = await performNucleiScan(ip, templatesPath);
+        return scanResult;
+    } catch (error) {
+        console.error(`Error running Nuclei scan for IP ${ip}:`, error);
+        throw error;
+    }
 }
 
 async function sendScanResultToASM(scanResult) {
-    const webhookUrl = process.env.ASM_WEBHOOK_URL;
-    const authToken = jwt.sign(scanResult, process.env.SECRET_KEY, { algorithm: 'HS256' });
+    try {
+        const webhookUrl = process.env.ASM_WEBHOOK_URL;
+        const authToken = jwt.sign(scanResult, process.env.SECRET_KEY, { algorithm: 'HS256' });
 
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-    };
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        };
 
-    const response = await axios.post(webhookUrl, scanResult, { headers });
-    return response.data;
+        const response = await axios.post(webhookUrl, scanResult, { headers });
+        return response.data;
+    } catch (error) {
+        console.error('Error sending scan result to ASM:', error);
+        throw error;
+    }
 }
 
 async function processQueueJob(job) {
@@ -40,7 +50,7 @@ async function processQueueJob(job) {
             const scanResult = await runNucleiScan(ip);
             await sendScanResultToASM(scanResult);
         }
-        await job.remove();
+        await removeJobById(job.id);
     } catch (error) {
         console.error(`Error processing job ${job.id}:`, error);
     }
@@ -52,14 +62,34 @@ const cron = require('node-cron');
 
 cron.schedule(CRON_INTERVAL, async () => {
     console.log('Processing queue...');
-    const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
-
-    console.log(`Jobs in queue: ${jobs.length}`);
-    for (const job of jobs) {
-        console.log(`Processing job [${job.id}]:`, job.data);
-        await processQueueJob(job);
+    try {
+        const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
+        console.log(`Jobs in queue: ${jobs.length}`);
+        for (const job of jobs) {
+            console.log(`Processing job [${job.id}]:`, job.data);
+            await processQueueJob(job);
+        }
+    } catch (error) {
+        console.error('Error processing the queue:', error);
     }
 });
+
+async function removeJobById(jobId) {
+    try {
+        const job = await nucleiQueue.getJob(jobId);
+        if (job) {
+            await job.remove();
+            console.log(`Job ${jobId} has been removed from the queue.`);
+        } else {
+            console.log(`Job ${jobId} not found.`);
+        }
+    } catch (error) {
+        console.error(`Error removing job ${jobId}:`, error);
+    }
+}
+
+
+
 
 module.exports = {
     nucleiQueue
