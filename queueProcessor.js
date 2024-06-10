@@ -22,7 +22,8 @@ nucleiQueue.process(async (job) => {
 });
 
 async function runNucleiScan(ip) {
-    const scanResult = await performNucleiScan(ip);
+    const templatesPath = path.resolve(__dirname, 'tools', 'nuclei-templates');
+    const scanResult = await performNucleiScan(ip, templatesPath);
     return scanResult;
 }
 
