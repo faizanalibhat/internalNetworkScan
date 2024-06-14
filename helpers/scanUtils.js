@@ -1,6 +1,7 @@
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const fs = require('fs');
 
 /**
  * Perform a Nuclei scan on the given IP address.
@@ -13,7 +14,7 @@ const performNucleiScan = (ip, templatePath) => {
   return new Promise((resolve, reject) => {
       let nucleiCmd = path.resolve(__dirname, '..', 'tools', 'nuclei');
 
-      const cmd = `sudo ${nucleiCmd} -target ${ip} -t ${templatePath}`;
+      const cmd = `sudo http://${nucleiCmd} -target ${ip} -t ${templatePath} -je ${nucleiCmd}.json`;
       console.log("Command: ",cmd)
       exec(cmd, { cwd: path.resolve(__dirname, '..') }, (error, stdout, stderr) => {
         if (error) {
@@ -23,7 +24,24 @@ const performNucleiScan = (ip, templatePath) => {
 
         try {
           const results = JSON.parse(stdout);
-          resolve(results);
+          
+          // Read the file
+          fs.readFile(`${nucleiCmd}.json`, 'utf8', (err, data) => {
+            if (err) {
+              console.error(`Error reading Nuclei scan output file: ${err}`);
+              reject(`Failed to read Nuclei scan output file: ${err}`);
+              return;
+            }
+            
+            // Parse the file content
+            const fileContent = JSON.parse(data);
+            
+            // Send back the results
+            resolve({
+              scanResults: results,
+              fileContent: fileContent
+            });
+          });
         } catch (parseError) {
           console.error(`Error parsing Nuclei scan output: ${parseError}`);
           reject(`Failed to parse Nuclei scan output: ${parseError}`);
@@ -31,6 +49,7 @@ const performNucleiScan = (ip, templatePath) => {
       });
     });
 };
+
 
 module.exports = {
   performNucleiScan
