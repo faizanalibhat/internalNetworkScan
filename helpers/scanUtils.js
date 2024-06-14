@@ -22,7 +22,6 @@ const performNucleiScan = (ip, templatePath) => {
         }
 
         try {
-          const results = JSON.parse(stdout);
           
           // Read the file
           fs.readFile(`${nucleiCmd}.json`, 'utf8', (err, data) => {
@@ -37,8 +36,7 @@ const performNucleiScan = (ip, templatePath) => {
             
             // Send back the results
             resolve({
-              scanResults: results,
-              fileContent: fileContent
+              scanResults: fileContent
             });
           });
         } catch (parseError) {

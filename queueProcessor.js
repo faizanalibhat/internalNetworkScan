@@ -16,7 +16,7 @@ async function runNucleiScan(ip) {
     try {
         const templatesPath = path.resolve(__dirname, 'tools', 'nuclei-templates');
         const scanResult = await performNucleiScan(ip, templatesPath);
-        return scanResult;
+        return scanResult.scanResults;
     } catch (error) {
         console.error(`Error running Nuclei scan for IP ${ip}:`, error);
         throw error;
