@@ -13,7 +13,7 @@ const performNucleiScan = (ip, templatePath) => {
   return new Promise((resolve, reject) => {
       let nucleiCmd = path.resolve(__dirname, '..', 'tools', 'nuclei');
 
-      const cmd = `sudo http://${nucleiCmd} -target ${ip} -t ${templatePath} -je ${nucleiCmd}.json`;
+      const cmd = `sudo ${nucleiCmd} -target http://${ip} -t ${templatePath} -je ${nucleiCmd}.json`;
       console.log("Command: ",cmd)
       exec(cmd, { cwd: path.resolve(__dirname, '..') }, (error, stdout, stderr) => {
         if (error) {
