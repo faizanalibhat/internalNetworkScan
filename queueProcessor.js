@@ -75,21 +75,37 @@ async function removeJobById(jobId) {
 }
 
 async function processQueueMaster() {
-    while (true) {
         console.log('Processing queue...');
         try {
-            const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
-            console.log(`Jobs in queue: ${jobs.length}`);
-            for (const job of jobs) {
-                console.log(`Processing job [${job.id}]:`, job.data);
-                await processQueueJob(job);
+
+            while (true) {
+                console.log("Trying to fetch a job...");
+                let job;
+    
+                try {
+                    job = await nucleiQueue.getNextJob();
+                } catch (e) {
+                    console.error('Error fetching job:', e);
+                }
+    
+                if (!job) {
+                    console.log('No more jobs in the queue. Waiting for new jobs...');
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    continue;
+                }
+        
+                try {
+                    console.log(job)
+                    await processQueueJob(job);
+
+                } catch (error) {
+                    console.error('Error processing the queue:', error);
+                }
             }
+
         } catch (error) {
             console.error('Error processing the queue:', error);
         }
-
-    }
-
 }
 
 
