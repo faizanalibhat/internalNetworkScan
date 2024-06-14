@@ -56,23 +56,9 @@ async function processQueueJob(job) {
     }
 }
 
-const CRON_INTERVAL = process.env.CRON_INTERVAL || '*/30 * * * * *';
 
-const cron = require('node-cron');
 
-cron.schedule(CRON_INTERVAL, async () => {
-    console.log('Processing queue...');
-    try {
-        const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
-        console.log(`Jobs in queue: ${jobs.length}`);
-        for (const job of jobs) {
-            console.log(`Processing job [${job.id}]:`, job.data);
-            await processQueueJob(job);
-        }
-    } catch (error) {
-        console.error('Error processing the queue:', error);
-    }
-});
+
 
 async function removeJobById(jobId) {
     try {
@@ -88,8 +74,29 @@ async function removeJobById(jobId) {
     }
 }
 
+async function processQueueMaster() {
+    while (true) {
+        console.log('Processing queue...');
+        try {
+            const jobs = await nucleiQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
+            console.log(`Jobs in queue: ${jobs.length}`);
+            for (const job of jobs) {
+                console.log(`Processing job [${job.id}]:`, job.data);
+                await processQueueJob(job);
+            }
+        } catch (error) {
+            console.error('Error processing the queue:', error);
+        }
+
+    }
+
+}
 
 
+
+processQueueMaster().catch(error => {
+    console.error('Error processing Queue', error);
+});
 
 module.exports = {
     nucleiQueue
