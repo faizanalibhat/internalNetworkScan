@@ -26,14 +26,15 @@ async function runNucleiScan(ip) {
 async function sendScanResultToASM(scanResult) {
     try {
         const webhookUrl = process.env.ASM_WEBHOOK_URL;
-        const authToken = jwt.sign(scanResult, process.env.SECRET_KEY, { algorithm: 'HS256' });
+        const orgId = process.env.ORG_ID;
+        const authToken = jwt.sign({orgId}, process.env.SECRET_KEY, { algorithm: 'HS256' });
 
         const headers = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
         };
 
-        const response = await axios.post(webhookUrl, scanResult, { headers });
+        const response = await axios.post(webhookUrl, {...scanResult, orgId}, { headers });
         return response.data;
     } catch (error) {
         console.error('Error sending scan result to ASM:', error);

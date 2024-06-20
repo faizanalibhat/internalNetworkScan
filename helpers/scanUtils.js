@@ -24,7 +24,7 @@ const performNucleiScan = (ip, templatePath) => {
         try {
           
           // Read the file
-          fs.readFile(`${nucleiCmd}.json`, 'utf8', (err, data) => {
+          fs.readFile(`${ip}.json`, 'utf8', (err, data) => {
             if (err) {
               console.error(`Error reading Nuclei scan output file: ${err}`);
               reject(`Failed to read Nuclei scan output file: ${err}`);
