@@ -2,10 +2,10 @@ const nucleiQueue = require('../queueProcessor').nucleiQueue;
 
 
 exports.enqueueNucleiScan = async (req, res) => {
-    const { ips } = req.body;
+    const { target } = req.body;
 
     try {
-        const job = await nucleiQueue.add({ ips });
+        const job = await nucleiQueue.add({ ips: [target] });
         console.log(`New job added to queue:`, job.data);
         res.status(200).send({ message: 'Nuclei scan job added to queue', jobId: job.id });
     } catch (error) {
